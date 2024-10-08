@@ -1,53 +1,23 @@
+#!/bin/bash
 
-#### Zabbix
+# Verificar se o Docker e o Docker Compose estão instalados
+if ! command -v docker &> /dev/null; then
+    echo "Docker não está instalado. Por favor, instale o Docker primeiro."
+    exit 1
+fi
 
-##### `docker-compose.yml`
+if ! command -v docker-compose &> /dev/null; then
+    echo "Docker Compose não está instalado. Por favor, instale o Docker Compose primeiro."
+    exit 1
+fi
 
-Arquivo para iniciar o Zabbix em um contêiner Docker.
+# Criar rede do Docker
+echo "Criando rede do Docker..."
+docker network create monitoring || { echo "Falha ao criar a rede"; exit 1; }
 
-```yaml
-version: '3.5'
+# Subir o Zabbix Server
+echo "Subindo o Zabbix Server..."
+docker-compose up -d || { echo "Falha ao iniciar o Zabbix"; exit 1; }
 
-services:
-  zabbix-server:
-    image: zabbix/zabbix-server-mysql:latest
-    environment:
-      MYSQL_ROOT_PASSWORD: zabbixdbpass
-      MYSQL_DATABASE: zabbix
-      MYSQL_USER: zabbix
-      MYSQL_PASSWORD: zabbixdbpass
-    ports:
-      - "10051:10051"
-    networks:
-      - monitoring
+echo "Zabbix Server iniciado com sucesso!"
 
-  zabbix-web-nginx:
-    image: zabbix/zabbix-web-nginx-mysql:latest
-    environment:
-      ZBX_SERVER_HOST: zabbix-server
-      MYSQL_ROOT_PASSWORD: zabbixdbpass
-      MYSQL_DATABASE: zabbix
-      MYSQL_USER: zabbix
-      MYSQL_PASSWORD: zabbixdbpass
-    ports:
-      - "8080:8080"
-    networks:
-      - monitoring
-
-  mysql:
-    image: mysql:5.7
-    environment:
-      MYSQL_ROOT_PASSWORD: zabbixdbpass
-      MYSQL_DATABASE: zabbix
-      MYSQL_USER: zabbix
-      MYSQL_PASSWORD: zabbixdbpass
-    volumes:
-      - mysql-storage:/var/lib/mysql
-    networks:
-      - monitoring
-
-volumes:
-  mysql-storage:
-
-networks:
-  monitoring:
